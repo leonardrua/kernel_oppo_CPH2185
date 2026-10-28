@@ -85,14 +85,10 @@ else
     ccflags-y += -DCFG_WIFI_IP_SET=1
 endif
 
-ifneq ($(CONFIG_WLAN_DRV_BUILD_IN),)
-    ccflags-y += -DCFG_BUILT_IN_DRIVER=1
-else
 ifneq ($(filter MTK_WCN_REMOVE_KERNEL_MODULE,$(KBUILD_SUBDIR_CCFLAGS)),)
     ccflags-y += -DCFG_BUILT_IN_DRIVER=1
 else
     ccflags-y += -DCFG_BUILT_IN_DRIVER=0
-endif
 endif
 
 ifneq ($(findstring UT_TEST_MODE,$(MTK_COMBO_CHIP)),)
