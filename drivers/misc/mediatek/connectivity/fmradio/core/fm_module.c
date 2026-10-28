@@ -15,7 +15,6 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
-#include <linux/of_platform.h>
 #include <linux/device.h>
 #include <linux/fs.h>
 #include <linux/proc_fs.h>
@@ -25,16 +24,12 @@
 #include <linux/sched.h>
 #include <linux/delay.h>	/* udelay() */
 #include <linux/version.h>
-#include <linux/gpio.h>
+
 #include "fm_config.h"
 #include "fm_main.h"
 #include "fm_ioctl.h"
-#include <linux/of_gpio.h>
-#include <linux/of.h>
+
 #define FM_PROC_FILE		"fm"
-#define DEFAULT_FM_LNA_NONEED    (-1)
-#define GPIO_PULL_UP             (1)
-#define GPIO_PULL_DOWN           (0)
 
 unsigned int g_dbg_level = 0xfffffff5;	/* Debug level of FM */
 
@@ -42,15 +37,6 @@ unsigned int g_dbg_level = 0xfffffff5;	/* Debug level of FM */
 static struct fm *g_fm;
 /* proc file entry */
 static struct proc_dir_entry *g_fm_proc;
-/*gpio port: expected 159, otherwise -1*/
-static int g_lna_en_gpio = DEFAULT_FM_LNA_NONEED;
-//wired-headset status. false: no wired headset, ture: has wired headset
-static bool is_headset_on = false;
-static bool is_biuld_in = false;
-
-struct device_node *fm_node = NULL;
-static unsigned int fm_elna = 0;
-static bool global_enable_elna = false;
 
 /* char device interface */
 static signed int fm_cdev_setup(struct fm *fm);
@@ -90,124 +76,12 @@ static const struct file_operations fm_proc_ops = {
 	.write = fm_proc_write,
 };
 
-/*********************************************************************************
-Function:       setHeadsetStatus
-Description:    this func is for audio driver side to set wired headset status,
-                and if plug in the wired headset, pull down the gpio always.
-Called By:      audio driver side accdet.c send_accdet_status_event()
-Input:          bool status: the instant wired headset status.
-Output:         none
-*********************************************************************************/
-void setHeadsetStatus(bool status) {
-    is_headset_on = status;
-
-    WCN_DBG(FM_NTC | MAIN, "%s: [fm build-in] is_headset_on=%d\n", __func__, is_headset_on);
-
-    if(fm_node){
-        if(is_headset_on&&global_enable_elna&&gpio_is_valid(fm_elna)){
-         WCN_DBG(FM_NTC | MAIN, "%s: [fm build-in] fm_node and global_enable_elna is true Headset is plug-in, pull down gpio\n", __func__);
-         gpio_set_value_cansleep(fm_elna, GPIO_PULL_DOWN);
-        }
-        else{
-
-        }
-    }
-    else if(is_headset_on && gpio_is_valid(g_lna_en_gpio)) {
-        WCN_DBG(FM_NTC | MAIN, "%s: [fm build-in] Headset is plug-in, pull down gpio\n", __func__);
-        gpio_set_value_cansleep(g_lna_en_gpio, GPIO_PULL_DOWN);
-    }
-    else{
-
-    }
-
-    return;
-}
-EXPORT_SYMBOL(setHeadsetStatus);
-
-static bool hw_confirm_fm_node(void)
-{
-	fm_node = of_find_compatible_node(NULL,NULL,"huawei,fm_elna");
-	if(fm_node){
-		WCN_DBG(FM_NTC | MAIN,"%s: [fm build-in] fm_find node ok\n", __func__);
-		return true;
-	}
-
-err:
-	WCN_DBG(FM_ERR | MAIN,"%s: [fm build-in] go to error!\n", __func__);
-	return false;
-
-}
-static bool hw_fm_lna_init_temp(void){
-    int ret = 0;
-    const char *enable_elna = NULL;
-    if(of_property_read_string(fm_node,"fm,enable_elna",&enable_elna))
-        WCN_DBG(FM_ERR | MAIN,"%s: [fm build-in] missing fm,enable_elna in dts", __func__);
-
-    if(strcmp(enable_elna,"false")==0){
-        global_enable_elna = false;
-        WCN_DBG(FM_NTC | MAIN,"%s: [fm build-in] global_enable_elna = %d", __func__,global_enable_elna);
-        return true;
-    }
-    else if(strcmp(enable_elna,"true")){
-        global_enable_elna = true;
-        fm_elna = of_get_named_gpio_flags(fm_node, "fm,fm_elna_pins", 0,NULL);
-        ret = gpio_request(fm_elna, "fm_elna_pins");
-        WCN_DBG(FM_NTC | MAIN,"%s: [fm build-in] request gpio: ret=%d,gpio=%d,global_enable_elna=%d\n", __func__, ret,fm_elna,global_enable_elna);
-
-        if(ret){
-            fm_elna = DEFAULT_FM_LNA_NONEED;
-            WCN_DBG(FM_ERR | MAIN,"%s: [fm build-in] Failed to request gpio %d!\n", __func__, fm_elna);
-            goto err;
-        }
-
-        if (gpio_direction_output(fm_elna, GPIO_PULL_DOWN)) {
-            WCN_DBG(FM_ERR | MAIN,"%s: [fm build-in] gpio set output failed!\n", __func__);
-            gpio_free(fm_elna);
-            fm_elna = DEFAULT_FM_LNA_NONEED;
-            goto err;
-        }
-
-        return true;
-
-    }
-    else{
-
-    }
-err:
-    WCN_DBG(FM_ERR | MAIN,"%s: [fm build-in] go to error!\n", __func__);
-    return false;
-}
-static bool hw_lna_init_temp(void) {
-    int ret = 0;
-    g_lna_en_gpio = 491 ; //159+332  the gpio number will start from 332 in MTK
-
-    ret = gpio_request(g_lna_en_gpio, "g_lna_en_gpio");
-    WCN_DBG(FM_NTC | MAIN,"%s: [fm build-in] Now request gpio: ret=%d\n", __func__, ret);
-
-    if (ret) {
-        g_lna_en_gpio = DEFAULT_FM_LNA_NONEED;
-        WCN_DBG(FM_ERR | MAIN,"%s: [fm build-in] Failed to request gpio %d!\n", __func__, g_lna_en_gpio);
-        goto err;
-    }
-
-    if (gpio_direction_output(g_lna_en_gpio, GPIO_PULL_DOWN)) {
-        WCN_DBG(FM_ERR | MAIN,"%s: [fm build-in] gpio set output failed!\n", __func__);
-        gpio_free(g_lna_en_gpio);
-        g_lna_en_gpio = DEFAULT_FM_LNA_NONEED;
-        goto err;
-    }
-    return true;
-err:
-    WCN_DBG(FM_ERR | MAIN,"%s: [fm build-in] go to error!\n", __func__);
-    return false;
-}
-
 #ifdef CONFIG_COMPAT
 static long fm_ops_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	long ret;
 
-	WCN_DBG(FM_DBG | MAIN, "COMPAT %s---pid(%d)---cmd(0x%08x)---arg(0x%08x)\n", current->comm,
+	WCN_DBG(FM_NTC | MAIN, "COMPAT %s---pid(%d)---cmd(0x%08x)---arg(0x%08x)\n", current->comm,
 		current->pid, cmd, (unsigned int) arg);
 
 	if (!filp->f_op || !filp->f_op->unlocked_ioctl)
@@ -253,24 +127,6 @@ static long fm_ops_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				ret = -EFAULT;
 				goto out;
 			}
-			if(fm_node){
-				if(global_enable_elna&&!is_headset_on&&gpio_is_valid(fm_elna)){
-					WCN_DBG(FM_NTC | MAIN, "[fm build-in] fm_node_FM_IOCTL_POWERUP: global_enable_elna is true and Headset don not on Now pull up gpio\n");
-					gpio_set_value_cansleep(fm_elna, GPIO_PULL_UP);
-				}
-				else{
-					WCN_DBG(FM_NTC | MAIN, "[fm build-in] fm_node_FM_IOCTL_POWERUP: Headset on or global_enable_elna is false don not do something\n");
-				}
-			}
-			else{
-				if((!is_headset_on)&&gpio_is_valid(g_lna_en_gpio)) {
-					WCN_DBG(FM_NTC | MAIN, "[fm build-in] FM_IOCTL_POWERUP: Now pull up gpio\n");
-					gpio_set_value_cansleep(g_lna_en_gpio, GPIO_PULL_UP);
-				}
-				else {
-					WCN_DBG(FM_ERR | MAIN, "[fm build-in] FM_IOCTL_POWERUP: g_lna_en_gpio is unvalid\n");
-				}
-			}
 
 			if (parm.deemphasis == 1)
 				fm_config.rx_cfg.deemphasis = 1;
@@ -306,24 +162,7 @@ static long fm_ops_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				ret = -EFAULT;
 				goto out;
 			}
-			if(fm_node){
-				if(global_enable_elna&&gpio_is_valid(fm_elna)){
-					WCN_DBG(FM_NTC | MAIN, "[fm build-in] fm_node_FM_IOCTL_POWERDOWN: Now pull down gpio\n");
-					gpio_set_value_cansleep(fm_elna, GPIO_PULL_DOWN);
-				}
-				else{
-					WCN_DBG(FM_ERR | MAIN, "[fm build-in] global_enable_elna is false don not do sometings or g_lna_en_gpio is unvalid\n");
-				}
-			}
-			else{
-				if(gpio_is_valid(g_lna_en_gpio)) {
-					WCN_DBG(FM_NTC | MAIN, "[fm build-in] FM_IOCTL_POWERDOWN: Now pull down gpio\n");
-					gpio_set_value_cansleep(g_lna_en_gpio, GPIO_PULL_DOWN);
-				}
-				else {
-					WCN_DBG(FM_ERR | MAIN, "[fm build-in] g_lna_en_gpio is unvalid\n");
-				}
-			}
+
 			ret = fm_powerdown(fm, powerdwn_type);	/* 0: RX 1: TX */
 			WCN_DBG(FM_NTC | MAIN, "FM_IOCTL_POWERDOWN:1\n");
 			break;
@@ -383,7 +222,6 @@ static long fm_ops_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			break;
 		}
 	case FM_IOCTL_CQI_GET:{
-#if 0
 			struct fm_cqi_req cqi_req;
 			signed char *buf = NULL;
 			signed int tmp;
@@ -426,9 +264,6 @@ static long fm_ops_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			}
 
 			fm_free(buf);
-#else
-			WCN_DBG(FM_ALT | MAIN, "Not support get cqi\n");
-#endif
 			break;
 		}
 
@@ -928,7 +763,6 @@ static long fm_ops_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 			WCN_DBG(FM_DBG | MAIN, "......FM_IOCTL_RDS_GROUPCNT......\n");
 
-			memset(&gc_req, 0, sizeof(struct rds_group_cnt_req_t));
 			if (copy_from_user(&gc_req, (void *)arg, sizeof(struct rds_group_cnt_req_t))) {
 				WCN_DBG(FM_ALT | MAIN, "copy_from_user error\n");
 				ret = -EFAULT;
@@ -970,7 +804,7 @@ static long fm_ops_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			if (ret < 0)
 				goto out;
 
-			if (copy_to_user((void *)arg, &rds_log, sizeof(struct rds_raw_t))) {
+			if (copy_to_user((void *)arg, &rds_log, rds_log.len + 2 * sizeof(signed int))) {
 				WCN_DBG(FM_ALT | MAIN, "copy_to_user error\n");
 				ret = -EFAULT;
 				goto out;
@@ -1461,7 +1295,6 @@ static ssize_t fm_proc_write(struct file *file, const char *buffer, size_t count
 		WCN_DBG(FM_ERR | MAIN, "failed copy_from_user\n");
 		return -EFAULT;
 	}
-	tmp_buf[copysize] = 0;
 
 	if (strncmp(tmp_buf, "subsys reset", strlen("subsys reset")) == 0) {
 		fm_subsys_reset(fm);
@@ -1627,23 +1460,6 @@ static signed int mt_fm_probe(struct platform_device *pdev)
 	if (ret) {
 		WCN_DBG(FM_ERR | MAIN, "fm mod init err\n");
 		return -ENOMEM;
-	}
-
-	if(hw_confirm_fm_node()){
-		if(true == hw_fm_lna_init_temp()){
-			WCN_DBG(FM_NTC | MAIN, "hw_fm_lna_init_temp success\n");
-		}
-		else{
-			WCN_DBG(FM_NTC | MAIN, "hw_fm_lna_init_temp failed\n");
-		}
-	}
-	else{
-		if (true == hw_lna_init_temp()) {
-			WCN_DBG(FM_NTC | MAIN, "fm hw_lna_init_temp success\n");
-		}
-		else {
-			WCN_DBG(FM_ERR | MAIN, "fm hw_lna_init_temp failed\n");
-		}
 	}
 
 	return ret;

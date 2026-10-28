@@ -307,11 +307,11 @@ signed int fm_open(struct fm *fmp)
 
 		chipid = mtk_wcn_wmt_chipid_query();
 		fmp->projectid = chipid;
-		WCN_DBG(FM_DBG | MAIN, "wmt chip id=0x%x\n", chipid);
+		WCN_DBG(FM_NTC | MAIN, "wmt chip id=0x%x\n", chipid);
 
 		/* what's the purpose of put chipid to fmp->chip_id ? */
 		fmp->chip_id = fm_which_chip(chipid, NULL);
-		WCN_DBG(FM_DBG | MAIN, "fm chip id=0x%x\n", fmp->chip_id);
+		WCN_DBG(FM_NTC | MAIN, "fm chip id=0x%x\n", fmp->chip_id);
 
 		fm_eint_pin_cfg(FM_EINT_PIN_EINT_MODE);
 		fm_request_eint(fm_eint_handler);
@@ -366,7 +366,7 @@ signed int fm_rds_read(struct fm *fmp, signed char *dst, signed int len)
 		 *  } else {
 		 *  WCN_DBG(FM_ALT | MAIN, "fm_read wait err\n");
 		 *  return 0;
-		 *  } */
+		 *  } *//*event wait caused AP stop RDS thread and re-read RDS, which caused issue ALPS00595367 */
 
 		WCN_DBG(FM_DBG | MAIN, "fm_read no event now\n");
 		return 0;
@@ -1578,7 +1578,7 @@ signed int fm_tune(struct fm *fm, struct fm_tune_parm *parm)
 		ret = fm_rds_log_get(fm, (struct rds_rx_t *)&(rds_log.data), &len);
 		rds_log.dirty = true;
 		rds_log.len = (len < sizeof(rds_log.data)) ? len : sizeof(rds_log.data);
-		WCN_DBG(FM_DBG | MAIN, "clean rds log, rds_log.len =%d\n", rds_log.len);
+		WCN_DBG(FM_ALT | MAIN, "clean rds log, rds_log.len =%d\n", rds_log.len);
 		if (ret < 0)
 			break;
 	} while (rds_log.len > 0);

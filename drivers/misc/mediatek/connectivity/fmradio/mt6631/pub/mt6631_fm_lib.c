@@ -622,7 +622,7 @@ static signed int mt6631_tune_reg_op(unsigned char *buf, signed int buf_size, un
 {
 	signed int pkt_size = 4;
 
-	WCN_DBG(FM_DBG | CHIP, "%s enter mt6631_tune function\n", __func__);
+	WCN_DBG(FM_ALT | CHIP, "%s enter mt6631_tune function\n", __func__);
 
 	if (buf == NULL) {
 		WCN_DBG(FM_ERR | CHIP, "%s invalid pointer\n", __func__);
@@ -647,9 +647,9 @@ static signed int mt6631_tune_reg_op(unsigned char *buf, signed int buf_size, un
 #endif
 
 	pkt_size += fm_bop_udelay(100000, &buf[pkt_size], buf_size - pkt_size);
-	WCN_DBG(FM_DBG | CHIP, "mt6631_tune delay 100 ms wait 0x69 to change\n");
+	WCN_DBG(FM_ALT | CHIP, "mt6631_tune delay 100 ms wait 0x69 to change\n");
 
-	WCN_DBG(FM_DBG | CHIP, "%s leave mt6631_tune function\n", __func__);
+	WCN_DBG(FM_ALT | CHIP, "%s leave mt6631_tune function\n", __func__);
 
 	return pkt_size - 4;
 }
@@ -692,7 +692,7 @@ static signed int mt6631_pwrup_DSP_download(struct fm_patch_tbl *patch_tbl)
 	ret = mt6631_get_rom_version();
 	if (ret >= 0) {
 		mt6631_hw_info.rom_ver = ret;
-		WCN_DBG(FM_DBG | CHIP, "%s ROM version: v%d\n", __func__, mt6631_hw_info.rom_ver);
+		WCN_DBG(FM_NTC | CHIP, "%s ROM version: v%d\n", __func__, mt6631_hw_info.rom_ver);
 	} else {
 		WCN_DBG(FM_ERR | CHIP, "get ROM version failed\n");
 		if (ret == -4)
@@ -732,7 +732,7 @@ static signed int mt6631_pwrup_DSP_download(struct fm_patch_tbl *patch_tbl)
 
 	tmp_reg = dsp_buf[38] | (dsp_buf[39] << 8);	/* to be confirmed */
 	mt6631_hw_info.patch_ver = (signed int) tmp_reg;
-	WCN_DBG(FM_DBG | CHIP, "Patch version: 0x%08x\n", mt6631_hw_info.patch_ver);
+	WCN_DBG(FM_NTC | CHIP, "Patch version: 0x%08x\n", mt6631_hw_info.patch_ver);
 
 	ret = fm_download_patch((const unsigned char *)dsp_buf, patch_len, IMG_COEFFICIENT);
 	if (ret) {
@@ -760,7 +760,7 @@ static void mt6631_show_reg(void)
 	fm_host_reg_read(0x81024030, &host_reg[0]);
 	fm_host_reg_read(0x81021234, &host_reg[1]);
 	fm_host_reg_read(0x81021138, &host_reg[2]);
-	WCN_DBG(FM_DBG | CHIP,
+	WCN_DBG(FM_ALT | CHIP,
 		"host read 0x81024030 = 0x%08x, 0x81021234 = 0x%08x, 0x81021138 = 0x%08x\n",
 		host_reg[0], host_reg[1], host_reg[2]);
 
@@ -896,15 +896,9 @@ static signed int mt6631_PowerUp(unsigned short *chip_id, unsigned short *device
 
 	/* Enable connsys FM 2 wire RX */
 	fm_reg_write(0x9B, 0xF9AB);                /* G2: Set audio output i2s TX mode */
-	ret = fm_host_reg_write(0x81024064, 0x00000014); /* G3: Enable aon_osc_clk_cg */
-	if (ret)
-		WCN_DBG(FM_ERR | CHIP, "write 0x81024064 failed\n");
-	ret = fm_host_reg_write(0x81024058, 0x888100F3); /* G4: Enable FMAUD trigger, 20170119 */
-	if (ret)
-		WCN_DBG(FM_ERR | CHIP, "write 0x81024058 failed\n");
-	ret = fm_host_reg_write(0x81024054, 0x00000100); /* G5: Release fmsys memory power down*/
-	if (ret)
-		WCN_DBG(FM_ERR | CHIP, "write 0x81024054 failed\n");
+	fm_host_reg_write(0x81024064, 0x00000014); /* G3: Enable aon_osc_clk_cg */
+	fm_host_reg_write(0x81024058, 0x888100F3); /* G4: Enable FMAUD trigger, 20170119 */
+	fm_host_reg_write(0x81024054, 0x00000100); /* G5: Release fmsys memory power down*/
 
 	WCN_DBG(FM_NTC | CHIP, "pwr on seq ok\n");
 
@@ -1158,7 +1152,7 @@ static bool mt6631_SetFreq(unsigned short freq)
 	fm_reg_read(0x6b, &tmp_reg[4]);
 	fm_reg_read(0x9b, &tmp_reg[5]);
 
-	WCN_DBG(FM_DBG | CHIP, "%s: Before tune--0x62 0x64 0x69 0x6a 0x6b 0x9b = %04x %04x %04x %04x %04x %04x\n",
+	WCN_DBG(FM_ALT | CHIP, "%s: Before tune--0x62 0x64 0x69 0x6a 0x6b 0x9b = %04x %04x %04x %04x %04x %04x\n",
 			__func__,
 			tmp_reg[0],
 			tmp_reg[1],
@@ -1193,7 +1187,7 @@ static bool mt6631_SetFreq(unsigned short freq)
 	fm_reg_read(0x6b, &tmp_reg[4]);
 	fm_reg_read(0x9b, &tmp_reg[5]);
 
-	WCN_DBG(FM_DBG | CHIP, "%s: After tune--0x62 0x64 0x69 0x6a 0x6b 0x9b = %04x %04x %04x %04x %04x %04x\n",
+	WCN_DBG(FM_ALT | CHIP, "%s: After tune--0x62 0x64 0x69 0x6a 0x6b 0x9b = %04x %04x %04x %04x %04x %04x\n",
 			__func__,
 			tmp_reg[0],
 			tmp_reg[1],
@@ -1590,12 +1584,9 @@ static signed int mt6631_hw_info_get(struct fm_hw_info *req)
 
 static signed int mt6631_pre_search(void)
 {
-	signed int ret = 0;
 	mt6631_RampDown();
 	/* disable audio output I2S Rx mode */
-	ret = fm_host_reg_write(0x80101054, 0x00000000);
-	if (ret)
-		WCN_DBG(FM_ERR | CHIP, "%s: write 0x80101054 failed\n", __func__);
+	fm_host_reg_write(0x80101054, 0x00000000);
 	/* disable audio output I2S Tx mode */
 	fm_reg_write(0x9B, 0x0000);
 
@@ -1604,15 +1595,12 @@ static signed int mt6631_pre_search(void)
 
 static signed int mt6631_restore_search(void)
 {
-	signed int ret = 0;
 	mt6631_RampDown();
 	/* set audio output I2S Tx mode */
 	fm_reg_write(0x9B, 0xF9AB);
 	/* set audio output I2S Rx mode */
-	ret = fm_host_reg_write(0x80101054, 0x00003f35);
-	if (ret)
-		WCN_DBG(FM_ERR | CHIP, "%s: write 0x80101054 failed\n", __func__);
-	return ret;
+	fm_host_reg_write(0x80101054, 0x00003f35);
+	return 0;
 }
 
 static signed int mt6631_soft_mute_tune(unsigned short freq, signed int *rssi, signed int *valid)
@@ -1712,7 +1700,7 @@ static signed int mt6631_soft_mute_tune(unsigned short freq, signed int *rssi, s
 		WCN_DBG(FM_ALT | CHIP, "smt get CQI failed\n");
 		return false;
 	}
-	WCN_DBG(FM_DBG | CHIP, "valid=%d\n", *valid);
+	WCN_DBG(FM_NTC | CHIP, "valid=%d\n", *valid);
 	return true;
 }
 

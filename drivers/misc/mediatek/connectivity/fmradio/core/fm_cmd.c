@@ -580,7 +580,7 @@ signed int fm_get_patch_path(signed int ver, unsigned char *buff, int buffsize, 
 	for (i = 0; i < max; i++) {
 		if (patch_tbl[i].idx == ver) {
 			ppath = patch_tbl[i].patch;
-			WCN_DBG(FM_DBG | CHIP, "Get ROM version OK\n");
+			WCN_DBG(FM_NTC | CHIP, "Get ROM version OK\n");
 			break;
 		}
 	}
@@ -617,7 +617,7 @@ signed int fm_get_coeff_path(signed int ver, unsigned char *buff, int buffsize, 
 	for (i = 0; i < max; i++) {
 		if (patch_tbl[i].idx == ver) {
 			ppath = patch_tbl[i].coeff;
-			WCN_DBG(FM_DBG | CHIP, "Get ROM version OK\n");
+			WCN_DBG(FM_NTC | CHIP, "Get ROM version OK\n");
 			break;
 		}
 	}
@@ -666,7 +666,7 @@ signed int fm_download_patch(const unsigned char *img, signed int len, enum IMG_
 		return -1;
 
 	seg_num = len / PATCH_SEG_LEN + 1;
-	WCN_DBG(FM_DBG | CHIP, "binary len:%d, seg num:%d\n", len, seg_num);
+	WCN_DBG(FM_NTC | CHIP, "binary len:%d, seg num:%d\n", len, seg_num);
 
 	switch (type) {
 	case IMG_PATCH:

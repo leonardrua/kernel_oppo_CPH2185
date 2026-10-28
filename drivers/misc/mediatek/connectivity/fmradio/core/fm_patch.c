@@ -41,7 +41,7 @@ signed int fm_file_read(const signed char *filename, unsigned char *dst, signed 
 
 	if (len >= fw->size) {
 		memcpy(dst, fw->data, fw->size);
-		WCN_DBG(FM_DBG | CHIP, "Copy file data(%p) size(%zu)\n", fw->data, fw->size);
+		WCN_DBG(FM_NTC | CHIP, "Copy file data(%p) size(%zu)\n", fw->data, fw->size);
 		ret = fw->size;
 	} else {
 		WCN_DBG(FM_NTC | CHIP, "Copy file data failed fw->size(%zu) > bufsize(%d)\n", fw->size, len);

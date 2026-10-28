@@ -116,7 +116,7 @@ static signed int rds_grp_get(unsigned short *dst, struct rds_rx_t *raw, signed 
  * To check CRC rerult, if OK, *valid=true, else *valid=false
  * If success return 0, else return error code
 */
-static signed int rds_checksum_check(unsigned short crc, unsigned int mask, bool *valid)
+static signed int rds_checksum_check(unsigned short crc, signed int mask, bool *valid)
 {
 	if (valid == NULL) {
 		WCN_DBG(FM_ERR | RDSC, "%s,invalid pointer\n", __func__);
@@ -307,7 +307,7 @@ extern signed int rds_log_out(struct rds_log_t *thiz, struct rds_rx_t *dst, sign
 		WCN_DBG(FM_DBG | RDSC, "del a new log[len=%d]\n", thiz->len);
 	} else {
 		*dst_len = 0;
-		WCN_DBG(FM_DBG | RDSC, "rds log buf is empty\n");
+		WCN_DBG(FM_WAR | RDSC, "rds log buf is empty\n");
 	}
 
 	return 0;
@@ -632,6 +632,7 @@ static signed int rds_g0_ps_cmp(unsigned char addr, unsigned short cbc, unsigned
 				*bm &= ~(1 << indx);
 		}
 		/* if((corrBitCnt_BlkB == 0) && (corrBitCnt_BlkD == 0)) */
+		/* ALPS00523685:6627 CBC sometime is unreliable */
 #ifdef RDS_CBC_DEPENDENCY
 		if (cbc == 0) {
 			*bm |= 1 << PS_Num;
@@ -1370,7 +1371,7 @@ static signed int rds_retrieve_g0_ps(unsigned short *block_data, unsigned char S
 				num = 0;
 				for (i = 0; i < 8; i++) {
 					/* even ps=0x20 and bitmap=0xF, send event to host to cover last ps. */
-					if ((pstRDSData->PS_Data.PS[2][i] == 0x0))
+					if (pstRDSData->PS_Data.PS[2][i] == 0x0)
 						num++;
 				}
 				if (num != 8) {

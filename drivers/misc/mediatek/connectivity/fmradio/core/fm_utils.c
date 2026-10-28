@@ -393,7 +393,7 @@ signed int fm_spin_lock_put(struct fm_lock *thiz)
  *
  */
 static signed int fm_timer_init(struct fm_timer *thiz, void (*timeout) (unsigned long data),
-			    unsigned long data, signed long time, unsigned int flag)
+			    unsigned long data, signed long time, signed int flag)
 {
 	struct timer_list *timerlist = (struct timer_list *)thiz->priv;
 
