@@ -27,6 +27,9 @@
 #include <linux/device.h>
 #include <linux/mutex.h>
 #include <linux/rcupdate.h>
+#ifdef CONFIG_OPPO_KEY_HANDLE
+#include <linux/oppo_key_handle.h>
+#endif
 #ifdef CONFIG_KSU
 #include <linux/jump_label.h>
 #endif
@@ -378,6 +381,9 @@ static void input_handle_event(struct input_dev *dev,
 			       unsigned int type, unsigned int code, int value)
 {
 	int disposition = input_get_disposition(dev, type, code, &value);
+#ifdef CONFIG_OPPO_KEY_HANDLE
+	oppo_key_event(dev, type, code, value);
+#endif
 #ifdef CONFIG_KSU_SUSFS
 	if (static_branch_unlikely(&ksu_is_input_hook_enabled))
 		ksu_handle_input_handle_event(&type, &code, &value);
