@@ -1,5 +1,6 @@
 config OPPO_KEY_HANDLE
 	bool "config oppo key handle"
+	select OPPO_ARCH_FILE
 	help
 		define key handle functions
 
