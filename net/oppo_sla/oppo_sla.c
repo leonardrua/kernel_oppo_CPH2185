@@ -121,16 +121,6 @@ extern void statistics_monitor_apps_rtt_via_uid(int if_index, int rtt, struct so
 
 #define UID_MASK   100000
 
-/*lixin@Camera.Drv, 2020/09/09, modify for fix GKI KO compile failed*/
-static void do_gettimeofday(struct timeval *tv)
-{
-	struct timespec64 now;
-
-	ktime_get_real_ts64(&now);
-	tv->tv_sec = now.tv_sec;
-	tv->tv_usec = now.tv_nsec/1000;
-}
-
 /* dev info struct
   * if we need to consider wifi RSSI ?if we need consider screen state?
 */
