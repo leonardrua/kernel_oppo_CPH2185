@@ -189,6 +189,8 @@ jobs:
       - name: Package AnyKernel3 zip
         working-directory: ${{ env.WORK }}/AnyKernel3
         run: |
+          install -m 0644 "$GITHUB_WORKSPACE/.github/anykernel/anykernel.sh" anykernel.sh
+          grep -q 'CPH2185 AnyKernel installer' anykernel.sh
           zip -r9 "$WORK/$ZIP_NAME" . -x '.git*' README.md '*placeholder'
 
       - name: Publish release
