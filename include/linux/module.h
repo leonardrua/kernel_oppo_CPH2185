@@ -357,6 +357,13 @@ struct module {
 	/* Kernel parameters. */
 #ifdef CONFIG_SYSFS
 	struct mutex param_lock;
+	/*
+	 * The stock vendor kernel has a 48-byte struct mutex here (8 bytes
+	 * larger than ours).  Keep the following fields at the stock offsets
+	 * so vendor modules built against the stock struct module layout load
+	 * correctly.
+	 */
+	void *stock_module_abi_pad;
 #endif
 	struct kernel_param *kp;
 	unsigned int num_kp;
@@ -393,9 +400,6 @@ struct module {
 	/* Exception table */
 	unsigned int num_exentries;
 	struct exception_table_entry *extable;
-
-	/* Keep the stock vendor module ABI (init at offset 0x160). */
-	void *stock_module_abi_pad;
 
 	/* Startup function. */
 	int (*init)(void);
