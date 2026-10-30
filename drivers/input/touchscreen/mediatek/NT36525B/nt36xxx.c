@@ -1612,7 +1612,7 @@ static bool nvt_corner_point_process(int i)
     int j;
 	int flag = 0;
 	if (ts->nvt_oppo_proc_data->edge_limit.limit_00 == 0) {
-		//½Úµã/proc/touchpanel/oppo_tp_limit_enableµÄbit1Î»À´¿ØÖÆ¿ØÖÆ
+		//ï¿½Úµï¿½/proc/touchpanel/oppo_tp_limit_enableï¿½ï¿½bit1Î»ï¿½ï¿½ï¿½ï¿½ï¿½Æ¿ï¿½ï¿½ï¿½
 		if ((ts->nvt_oppo_proc_data->edge_limit.limit_lu) &&
 			(ts->nvt_oppo_proc_data->nvt_point_info[i].x < ts->nvt_oppo_proc_data->nvt_limit_area.area_xlu &&
 			ts->nvt_oppo_proc_data->nvt_point_info[i].y < ts->nvt_oppo_proc_data->nvt_limit_area.area_ylu)) {
@@ -1627,7 +1627,7 @@ static bool nvt_corner_point_process(int i)
 			flag = 1;
 
         }
-         //½Úµã/proc/touchpanel/oppo_tp_limit_enableµÄbit2Î»À´¿ØÖÆ¿ØÖÆ
+         //ï¿½Úµï¿½/proc/touchpanel/oppo_tp_limit_enableï¿½ï¿½bit2Î»ï¿½ï¿½ï¿½ï¿½ï¿½Æ¿ï¿½ï¿½ï¿½
         if ((ts->nvt_oppo_proc_data->edge_limit.limit_ru)  &&
 			(ts->nvt_oppo_proc_data->nvt_point_info[i].x > ts->nvt_oppo_proc_data->nvt_limit_area.area_xru &&
 			ts->nvt_oppo_proc_data->nvt_point_info[i].y < ts->nvt_oppo_proc_data->nvt_limit_area.area_yru)) {
@@ -1642,7 +1642,7 @@ static bool nvt_corner_point_process(int i)
 			flag = 1;
 
         }
-         //½Úµã/proc/touchpanel/oppo_tp_limit_enableµÄbit3Î»À´¿ØÖÆ¿ØÖÆ
+         //ï¿½Úµï¿½/proc/touchpanel/oppo_tp_limit_enableï¿½ï¿½bit3Î»ï¿½ï¿½ï¿½ï¿½ï¿½Æ¿ï¿½ï¿½ï¿½
        if ((ts->nvt_oppo_proc_data->edge_limit.limit_lb) &&
 	   	(ts->nvt_oppo_proc_data->nvt_point_info[i].x < ts->nvt_oppo_proc_data->nvt_limit_area.area_xlb &&
 	   	ts->nvt_oppo_proc_data->nvt_point_info[i].y > ts->nvt_oppo_proc_data->nvt_limit_area.area_ylb)) {
@@ -1657,7 +1657,7 @@ static bool nvt_corner_point_process(int i)
 			flag = 1;
 
         }
-         //½Úµã/proc/touchpanel/oppo_tp_limit_enableµÄbit4Î»À´¿ØÖÆ¿ØÖÆ
+         //ï¿½Úµï¿½/proc/touchpanel/oppo_tp_limit_enableï¿½ï¿½bit4Î»ï¿½ï¿½ï¿½ï¿½ï¿½Æ¿ï¿½ï¿½ï¿½
        if ((ts->nvt_oppo_proc_data->edge_limit.limit_rb) &&
 	   	(ts->nvt_oppo_proc_data->nvt_point_info[i].x > ts->nvt_oppo_proc_data->nvt_limit_area.area_xrb &&
 	   	ts->nvt_oppo_proc_data->nvt_point_info[i].y > ts->nvt_oppo_proc_data->nvt_limit_area.area_yrb)) {
@@ -1673,7 +1673,7 @@ static bool nvt_corner_point_process(int i)
 			flag = 1;
 
         }
-        //×ø±êµãÎª·Ç±ß½ÇÇøÓòÊ±£¬µ¯ÆðÇ°Ãæ¼ÇÂ¼µÄ±ß½Ç×ø±êµã
+        //ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Ç±ß½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Â¼ï¿½Ä±ß½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         if (ts->nvt_oppo_proc_data->nvt_point_info[i].type != NVT_AREA_CORNER) {
 
             if (ts->nvt_oppo_proc_data->nvt_limit_area.which_area == NVT_AREA_CORNER) {
