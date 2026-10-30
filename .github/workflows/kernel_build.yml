@@ -86,7 +86,7 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/project
         git clone -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.event.inputs.KERNEL_REPO }} linux --depth=1 &> /dev/null
-        git clone -b Old https://github.com/NCLnclNCL/AnyKernel3 AnyKernel3 --depth=1 &> /dev/null
+        git clone https://github.com/osm0sis/AnyKernel3 AnyKernel3 --depth=1 &> /dev/null
 
     - name: Add bakasu
       run: | 
@@ -114,7 +114,7 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/project/AnyKernel3
         cp $GITHUB_WORKSPACE/project/Image.gz-dtb Image.gz-dtb
-        zip -r9 $GITHUB_WORKSPACE/project/kernel-oppo-4.9.zip -- *
+        zip -r9 $GITHUB_WORKSPACE/project/CPH2185-${GITHUB_SHA::12}.zip -- *
 
     - name: Upload Release
       uses: softprops/action-gh-release@v1
