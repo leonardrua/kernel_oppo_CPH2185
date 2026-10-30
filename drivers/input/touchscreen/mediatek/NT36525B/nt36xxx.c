@@ -120,16 +120,7 @@ static void nvt_ts_late_resume(struct early_suspend *h);
 #endif
 
 uint32_t ENG_RST_ADDR  = 0x7FFF80;
-/*
- * NT36525B software-reset command address.
- *
- * The stock CPH2185 DTBO does not contain "novatek,swrst-n8-addr".
- * An AnyKernel zip only replaces the kernel, not the DTBO, so relying on
- * that property makes the driver abort before it can register the input
- * device.  Use the value from the stock OPPO DTS as the default and let
- * the DT override it when the property is present.
- */
-uint32_t SWRST_N8_ADDR = 0x03F0FE;
+uint32_t SWRST_N8_ADDR = 0; //read from dtsi
 
 #if TOUCH_KEY_NUM > 0
 const uint16_t touch_key_array[TOUCH_KEY_NUM] = {
@@ -292,14 +283,6 @@ return:
 *******************************************************/
 void nvt_rest_ddi(void)
 {
-	/*
-	 * reset_global_gpio is optional and is not present in the stock
-	 * CPH2185 DTBO.  Do not call gpio_set_value() with an invalid GPIO.
-	 */
-	if (!gpio_is_valid(ts->reset_global_gpio)) {
-		NVT_LOG("%s : reset_global_gpio not available, skip", __func__);
-		return;
-	}
 	gpio_set_value(ts->reset_global_gpio, 0);
 	NVT_LOG("%s : Pull down reset_global_gpio",__func__);
 	mdelay(1);
@@ -1294,20 +1277,13 @@ static int32_t nvt_parse_dt(struct device *dev)
 
 	ret = of_property_read_u32(np, "novatek,swrst-n8-addr", &SWRST_N8_ADDR);
 	if (ret) {
-		/*
-		 * The stock CPH2185 DTBO has no swrst property.  Do not fail
-		 * probe: the driver can still identify the chip and use the
-		 * default NT36525B reset address.
-		 */
-		SWRST_N8_ADDR = 0x03F0FE;
-		NVT_LOG("novatek,swrst-n8-addr missing, using default 0x%06X\n",
-			SWRST_N8_ADDR);
-		ret = 0;
+		NVT_ERR("error reading novatek,swrst-n8-addr. ret=%d\n", ret);
+		return ret;
 	} else {
 		NVT_LOG("SWRST_N8_ADDR=0x%06X\n", SWRST_N8_ADDR);
 	}
 
-	return 0;
+	return ret;
 }
 #else
 static int32_t nvt_parse_dt(struct device *dev)
