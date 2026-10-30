@@ -44,11 +44,13 @@ endif
     # Do build-in for xxx.c checking
     subdir-ccflags-y += -D MTK_WCN_REMOVE_KERNEL_MODULE
     subdir-ccflags-y += -D MTK_WCN_BUILT_IN_DRIVER
-    obj-y += bt/mt66xx/
-    obj-y += common/
-    obj-y += wlan/adaptor/
-    obj-y += wlan/core/gen4m/
-    obj-y += gps/
+    # These drivers are supplied as stock vendor modules. Keep only connadp
+    # built in so those modules can use the platform bridge exports above.
+    # obj-y += bt/mt66xx/
+    # obj-y += common/
+    # obj-y += wlan/adaptor/
+    # obj-y += wlan/core/gen4m/
+    # obj-y += gps/
     # Do build-in for Makefile checking
     # export CONFIG_WLAN_DRV_BUILD_IN=y
 

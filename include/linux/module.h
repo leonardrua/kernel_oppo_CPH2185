@@ -394,8 +394,8 @@ struct module {
 	unsigned int num_exentries;
 	struct exception_table_entry *extable;
 
-	/* Keep the init offset compatible with stock arm64 vendor modules. */
-	unsigned long init_padding;
+	/* Keep the stock vendor module ABI (init at offset 0x160). */
+	void *stock_module_abi_pad;
 
 	/* Startup function. */
 	int (*init)(void);
