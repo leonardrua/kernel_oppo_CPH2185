@@ -89,7 +89,7 @@ jobs:
         git clone https://github.com/osm0sis/AnyKernel3 AnyKernel3 --depth=1 &> /dev/null
 
     - name: Add bakasu
-      run: | 
+      run: |
         cd $GITHUB_WORKSPACE/project/linux
         curl -LSs "https://raw.githubusercontent.com/leonardrua/BakaSU/main/kernel/setup.sh" | bash -s main
 
