@@ -35,7 +35,7 @@ env:
   # for reproducible builds; this script is executed during the build.
   CLANG_REPO: https://github.com/techyminati/android_prebuilts_clang_host_linux-x86_clang-5484270
   PYTHON2_URL: https://github.com/NCLnclNCL/kernel-build/releases/download/python2.7.18/python2.7.18.zip
-  ANYKERNEL_REPO: https://github.com/osm0sis/AnyKernel3
+  ANYKERNEL_REPO: https://github.com/leonardrua/AnyKernel3
   BAKASU_REF: main
 
   CCACHE_DIR: ${{ github.workspace }}/.ccache
