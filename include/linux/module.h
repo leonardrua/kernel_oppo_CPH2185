@@ -394,6 +394,9 @@ struct module {
 	unsigned int num_exentries;
 	struct exception_table_entry *extable;
 
+	/* Keep the init offset compatible with stock arm64 vendor modules. */
+	unsigned long init_padding;
+
 	/* Startup function. */
 	int (*init)(void);
 
