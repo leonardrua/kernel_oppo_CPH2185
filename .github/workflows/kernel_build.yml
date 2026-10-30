@@ -120,7 +120,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          ${{ github.workspace }}/project/kernel-oppo-4.9.zip
+          ${{ github.workspace }}/project/CPH2185-${GITHUB_SHA::12}.zip
         name: Kernel ${{ env.KERNEL_VER }}-${{ env.BUILD_DATE }}
         tag_name: ${{ env.BUILD_DATE }}
         body: |
