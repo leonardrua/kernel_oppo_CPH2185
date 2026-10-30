@@ -189,7 +189,6 @@ jobs:
       - name: Package AnyKernel3 zip
         working-directory: ${{ env.WORK }}/AnyKernel3
         run: |
-          cp "$GITHUB_WORKSPACE/.github/anykernel/anykernel.sh" anykernel.sh
           zip -r9 "$WORK/$ZIP_NAME" . -x '.git*' README.md '*placeholder'
 
       - name: Publish release
