@@ -189,8 +189,9 @@ jobs:
       - name: Package AnyKernel3 zip
         working-directory: ${{ env.WORK }}/AnyKernel3
         run: |
-          install -m 0644 "$GITHUB_WORKSPACE/.github/anykernel/anykernel.sh" anykernel.sh
-          grep -q 'CPH2185 AnyKernel installer' anykernel.sh
+          # Use the generic AnyKernel3 installer as-is.  It repacks the stock
+          # boot image with magiskboot, which handles boot header v2, the DTB
+          # section and the AVB metadata correctly.
           zip -r9 "$WORK/$ZIP_NAME" . -x '.git*' README.md '*placeholder'
 
       - name: Publish release
