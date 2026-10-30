@@ -1,0 +1,132 @@
+name: Kernel Build for CPH2185
+
+on:
+  workflow_dispatch:
+    inputs:
+      KERNEL_REPO:
+        description: 'KERNEL_REPO'
+        required: true
+        default: 'https://github.com/leonardrua/kernel_oppo_CPH2185'
+      KERNEL_BRANCH:
+        description: 'KERNEL_BRANCH'
+        required: true
+        default: 'deprecated/android-4.9-q'
+      KERNEL_DEFCONFIG:
+        description: 'KERNEL_DEFCONFIG'
+        required: true
+        default: 'CPH2185_defconfig'
+      KERNEL_HOTFIX:
+        description: 'KERNEL_HOTFIX'
+        required: false
+        default: 'N/A'
+
+jobs:
+  build:
+    if: github.event.repository.owner.id == github.event.sender.id
+    runs-on: ubuntu-latest
+    environment: version
+    permissions:
+      contents: write
+    steps:
+
+    - name: Prepare Env
+      run: |
+        git config --global user.name "bot"
+        git config --global user.email "bot@email.com"
+        mkdir -p $GITHUB_WORKSPACE/project
+
+    - name: Install deps
+      uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: build-essential bc bison flex libssl-dev libncurses-dev libelf-dev git curl unzip gcc g++ ccache make python3 gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
+        execute_install_scripts: false
+
+    - name: Cache Toolchain
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ github.workspace }}/project/clang
+          ${{ github.workspace }}/project/python2
+        key: toolchain-${{ runner.os }}-clang-python
+
+    - name: Set up ccache
+      run: |
+        mkdir -p ~/.cache
+        ccache --version
+        echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+
+    - name: Cache ccache
+      uses: actions/cache@v4
+      with:
+        path: ~/.ccache
+        key: ${{ runner.os }}-clang-ccache-oppo-v${{ vars.VERSION }}
+        restore-keys: |
+          ${{ runner.os }}-clang-ccache-oppo-v${{ vars.VERSION }}
+
+    - name: Install python2
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        cd $GITHUB_WORKSPACE/project
+        wget https://github.com/NCLnclNCL/kernel-build/releases/download/python2.7.18/python2.7.18.zip
+        7z x python2.7.18.zip
+
+    - name: Setup python2 symlink
+      run: |
+        sudo update-alternatives --install /usr/bin/python python $GITHUB_WORKSPACE/project/python2/bin/python2.7 1
+        sudo ln -sf "$GITHUB_WORKSPACE/project/python2/bin/python2.7" /usr/bin/python2
+
+    - name: Prepare TC
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        git clone --depth=1 https://github.com/techyminati/android_prebuilts_clang_host_linux-x86_clang-5484270 $GITHUB_WORKSPACE/project/clang
+        $GITHUB_WORKSPACE/project/clang/bin/clang --version
+
+    - name: Prepare Kernel
+      run: |
+        cd $GITHUB_WORKSPACE/project
+        git clone -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.event.inputs.KERNEL_REPO }} linux --depth=1 &> /dev/null
+        git clone -b Old https://github.com/NCLnclNCL/AnyKernel3 AnyKernel3 --depth=1 &> /dev/null
+
+    - name: Add bakasu
+      run: | 
+        cd $GITHUB_WORKSPACE/project/linux
+        curl -LSs "https://raw.githubusercontent.com/leonardrua/BakaSU/main/kernel/setup.sh" | bash -s main
+
+    - name: Building Kernel
+      run: |
+        cd $GITHUB_WORKSPACE/project/linux
+        git pull
+        PATH=$GITHUB_WORKSPACE/project/clang/bin:$PATH
+        export TZ="Asia/Jakarta"
+        export DATE=$(date "+%Y%m%d-%H%M%S")
+        echo "BUILD_DATE=$(date "+%Y%m%d%H%M%S")" >> $GITHUB_ENV
+        echo "KERNEL_VER=$(make kernelversion)" >> $GITHUB_ENV
+        export ARCH=arm64
+        export ODM_WT_EDIT=yes
+        export VENDOR_EDIT=1
+        make O=out ARCH=$ARCH ${{ github.event.inputs.KERNEL_DEFCONFIG }}
+        make -j$(nproc --all) O=out ARCH=$ARCH CC="ccache clang" CROSS_COMPILE="aarch64-linux-gnu-" CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
+        cp out/arch/arm64/boot/Image.gz-dtb $GITHUB_WORKSPACE/project/Image.gz-dtb
+        cp out/.config $GITHUB_WORKSPACE/project/AnyKernel3/config
+
+    - name: Prepare AK3
+      run: |
+        cd $GITHUB_WORKSPACE/project/AnyKernel3
+        cp $GITHUB_WORKSPACE/project/Image.gz-dtb Image.gz-dtb
+        zip -r9 $GITHUB_WORKSPACE/project/kernel-oppo-4.9.zip -- *
+
+    - name: Upload Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          ${{ github.workspace }}/project/kernel-oppo-4.9.zip
+        name: Kernel ${{ env.KERNEL_VER }}-${{ env.BUILD_DATE }}
+        tag_name: ${{ env.BUILD_DATE }}
+        body: |
+          Repo: ${{ github.event.inputs.KERNEL_REPO }}
+          Branch: ${{ github.event.inputs.KERNEL_BRANCH }}
+          Config: ${{ github.event.inputs.KERNEL_DEFCONFIG }}
+          Toolchain: Android Clang 5484270
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
