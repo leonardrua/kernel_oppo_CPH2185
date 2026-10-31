@@ -6,15 +6,12 @@ on:
       kernel_artifact_id:
         description: Kernel artifact ID
         required: true
-        default: "13034348545"
       debug_artifact_id:
         description: Debug artifact ID
         required: true
-        default: "13034348567"
       kernel_commit:
         description: Kernel commit
         required: true
-        default: "a9a0054bc1fe10ab917f97cc4b8a85dcbf5ae7e6"
       release_tag:
         description: Release tag
         required: true
