@@ -30,12 +30,16 @@ jobs:
             zip
 
       - name: Download CPH2185 source
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          curl -L --retry 5 --retry-all-errors -o source.tar.gz \
-            "https://codeload.github.com/leonardrua/kernel_oppo_CPH2185/tar.gz/a241505b43662495457ebba72bc6685f756dbfa8"
-          mkdir -p src
-          tar -xzf source.tar.gz -C src --strip-components=1
+          git clone --quiet --depth=1 --branch "$GITHUB_REF_NAME" \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" src
+          git -C src submodule update --init --recursive
           test -f src/arch/arm64/configs/CPH2185_defconfig
+          test -d src/KernelSU/kernel
+          test -f src/.gitmodules
+          grep -q 'github.com/leonardrua/BakaSU' src/.gitmodules
 
       - name: Overlay official OPPO A15 Q connectivity source
         run: |
@@ -52,13 +56,17 @@ jobs:
           grep -q 'connectivity/common/common_main/include' \
             src/drivers/misc/mediatek/connectivity/wlan/adaptor/Makefile
 
-      - name: Setup KernelSU BakaSU and SUSFS
+      - name: Verify KernelSU BakaSU and SUSFS
         working-directory: src
         run: |
-          curl -LSs "https://raw.githubusercontent.com/leonardrua/BakaSU/main/kernel/setup.sh" | bash -s main
           test -d KernelSU/kernel
+          test -f .gitmodules
+          grep -q 'github.com/leonardrua/BakaSU' .gitmodules
+          test "$(git -C KernelSU rev-parse HEAD)" = "$(git ls-tree HEAD KernelSU | awk '{print $3}')"
           grep -q 'kernelsu' drivers/Makefile
           grep -q 'drivers/kernelsu/Kconfig' drivers/Kconfig
+          grep -q '^CONFIG_KSU=y' arch/arm64/configs/CPH2185_defconfig
+          grep -q '^CONFIG_KSU_SUSFS=y' arch/arm64/configs/CPH2185_defconfig
 
       - name: Apply built-in WiFi and strict module loading
         working-directory: src
@@ -370,7 +378,7 @@ jobs:
         working-directory: src
         run: |
           set -eu
-          tar --exclude='./out' --exclude='./.git' \
+          tar --exclude='./out' --exclude='./.git' --exclude='./KernelSU/.git' \
             -czf "../Falcon-AZ-source-${GITHUB_SHA::12}.tar.gz" .
           ls -lh "../Falcon-AZ-source-${GITHUB_SHA::12}.tar.gz"
           sha256sum "../Falcon-AZ-source-${GITHUB_SHA::12}.tar.gz"
@@ -381,12 +389,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -eu
-          git init -q -b falcon-az-source
           git config user.name "Azizur Rahman"
           git config user.email "iremm12rr@gmail.com"
           git config http.postBuffer 524288000
           git add -A
-          git commit -q -m "Falcon-AZ 4.9.190 working source: built-in WiFi and Bluetooth, KernelSU SUSFS, touch fix"
+          if ! git diff --cached --quiet; then
+            git commit -q -m "Falcon-AZ 4.9.190 working source: built-in WiFi and Bluetooth, KernelSU SUSFS, touch fix"
+          fi
           git push --force \
             "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
             HEAD:refs/heads/falcon-az-source
