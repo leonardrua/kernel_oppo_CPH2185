@@ -3,15 +3,9 @@ name: Publish Falcon-AZ kernel
 on:
   workflow_dispatch:
     inputs:
-      kernel_artifact_id:
-        description: Kernel artifact ID
-        required: true
-      debug_artifact_id:
-        description: Debug artifact ID
-        required: true
-      kernel_commit:
-        description: Kernel commit
-        required: true
+      run_id:
+        description: Build run ID (leave empty to use the latest successful build)
+        required: false
       release_tag:
         description: Release tag
         required: true
@@ -33,14 +27,49 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y binutils-aarch64-linux-gnu unzip
 
+      - name: Resolve build artifacts
+        id: build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.run_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RUN_ID:-}" ]; then
+            RUN_ID=$(gh api \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/build-falcon-az-a15q.yml/runs?status=success&per_page=1" \
+              --jq '.workflow_runs[0].id')
+          fi
+          test -n "$RUN_ID"
+          COMMIT=$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}" \
+            --jq '.head_sha')
+          KERNEL_ID=$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts?per_page=100" \
+            --jq '[.artifacts[] | select(.expired == false) | select(.name | startswith("Falcon-AZ-CPH2185-CPH2179-")) | .id] | first // empty')
+          DEBUG_ID=$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts?per_page=100" \
+            --jq '[.artifacts[] | select(.expired == false) | select(.name | startswith("Falcon-AZ-debug-")) | .id] | first // empty')
+          test -n "$COMMIT"
+          test -n "$KERNEL_ID"
+          test -n "$DEBUG_ID"
+          {
+            echo "run_id=$RUN_ID"
+            echo "commit=$COMMIT"
+            echo "kernel_artifact_id=$KERNEL_ID"
+            echo "debug_artifact_id=$DEBUG_ID"
+          } >> "$GITHUB_OUTPUT"
+          echo "Using build run $RUN_ID (commit $COMMIT)"
+          echo "Kernel artifact: $KERNEL_ID"
+          echo "Debug artifact:  $DEBUG_ID"
+
       - name: Download build artifacts
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -eu
           mkdir -p artifacts/kernel artifacts/debug
-          gh api "repos/${{ github.repository }}/actions/artifacts/${{ inputs.kernel_artifact_id }}/zip" > artifacts/kernel.zip
-          gh api "repos/${{ github.repository }}/actions/artifacts/${{ inputs.debug_artifact_id }}/zip" > artifacts/debug.zip
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${{ steps.build.outputs.kernel_artifact_id }}/zip" > artifacts/kernel.zip
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${{ steps.build.outputs.debug_artifact_id }}/zip" > artifacts/debug.zip
           unzip -q artifacts/kernel.zip -d artifacts/kernel
           unzip -q artifacts/debug.zip -d artifacts/debug
           ls -lh artifacts/kernel artifacts/debug
@@ -52,7 +81,8 @@ jobs:
       - name: Prepare kernel zip and info
         id: package
         env:
-          COMMIT: ${{ inputs.kernel_commit }}
+          COMMIT: ${{ steps.build.outputs.commit }}
+          RUN_ID: ${{ steps.build.outputs.run_id }}
         run: |
           set -eu
           ZIP=$(ls artifacts/kernel/Falcon-AZ-CPH2185-CPH2179-*.zip)
@@ -79,6 +109,7 @@ jobs:
           size=$SIZE
           sha256=$SHA
           commit=$COMMIT
+          run_id=$RUN_ID
           kernel=4.9.190-falcon-az
           wifi=built-in (A15_Q, obj-y)
           devicecheck=0
