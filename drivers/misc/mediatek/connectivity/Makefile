@@ -19,10 +19,10 @@ ifneq ($(KERNELRELEASE),)
     subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
     subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1
     subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1/$(MTK_PLATFORM)
-    subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
-    subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+    subdir-ccflags-y +=  -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+    subdir-ccflags-y +=  -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 ifeq ($(CONFIG_MTK_PMIC_CHIP_MT6359),y)
-    subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6359
+    subdir-ccflags-y +=  -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6359
 endif
     subdir-ccflags-y += -I$(srctree)/drivers/mmc/core
     subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
@@ -49,52 +49,13 @@ endif
     obj-$(CONFIG_MTK_COMBO) += common/
     obj-$(CONFIG_MTK_COMBO_WIFI) += wlan/adaptor/
     obj-$(CONFIG_MTK_COMBO_CHIP_CONSYS_6765) += wlan/core/gen4m/
-    obj-$(CONFIG_MTK_COMBO_BT) += bt/mt66xx/
-    obj-$(CONFIG_MTK_COMBO_GPS) += gps/
-    obj-$(CONFIG_MTK_FMRADIO) += fmradio/ 
+    # obj-$(CONFIG_MTK_COMBO_BT) += bt/mt66xx/
+    # obj-$(CONFIG_MTK_COMBO_GPS) += gps/
+    # obj-$(CONFIG_MTK_FMRADIO) += fmradio/ 
 
     # Do build-in for Makefile checking
     # export CONFIG_WLAN_DRV_BUILD_IN=y
 
-    ifeq ($(CONFIG_WLAN_DRV_BUILD_IN),y)
-        PATH_TO_WMT_DRV      = vendor/mediatek/kernel_modules/connectivity/common
-        PATH_TO_WLAN_CHR_DRV = vendor/mediatek/kernel_modules/connectivity/wlan/adaptor
-        PATH_TO_WLAN_DRV     = vendor/mediatek/kernel_modules/connectivity/wlan/core/gen4m
-
-        ABS_PATH_TO_WMT_DRV      = $(srctree)/../$(PATH_TO_WMT_DRV)
-        ABS_PATH_TO_WLAN_CHR_DRV = $(srctree)/../$(PATH_TO_WLAN_CHR_DRV)
-        ABS_PATH_TO_WLAN_DRV     = $(srctree)/../$(PATH_TO_WLAN_DRV)
-
-        # check wlan driver folder
-        ifeq (,$(wildcard $(ABS_PATH_TO_WMT_DRV)))
-            $(error $(ABS_PATH_TO_WMT_DRV) is not existed)
-        endif
-        ifeq (,$(wildcard $(ABS_PATH_TO_WLAN_CHR_DRV)))
-            $(error $(ABS_PATH_TO_WLAN_CHR_DRV) is not existed)
-        endif
-        ifeq (,$(wildcard $(ABS_PATH_TO_WLAN_DRV)))
-            $(error $(ABS_PATH_TO_WLAN_DRV) is not existed)
-        endif
-
-        $(warning symbolic link to $(PATH_TO_WMT_DRV))
-        $(warning symbolic link to $(PATH_TO_WLAN_CHR_DRV))
-        $(warning symbolic link to $(PATH_TO_WLAN_DRV))
-
-        $(shell unlink $(srctree)/$(src)/wmt_drv)
-        $(shell unlink $(srctree)/$(src)/wmt_chrdev_wifi)
-        $(shell unlink $(srctree)/$(src)/wlan_drv_gen4m)
-
-        $(shell ln -s $(ABS_PATH_TO_WMT_DRV)      $(srctree)/$(src)/wmt_drv)
-        $(shell ln -s $(ABS_PATH_TO_WLAN_CHR_DRV) $(srctree)/$(src)/wmt_chrdev_wifi)
-        $(shell ln -s $(ABS_PATH_TO_WLAN_DRV)     $(srctree)/$(src)/wlan_drv_gen4m)
-
-        # Do build-in for xxx.c checking
-        subdir-ccflags-y += -D MTK_WCN_REMOVE_KERNEL_MODULE
-        subdir-ccflags-y += -D MTK_WCN_BUILT_IN_DRIVER
-        obj-y += wmt_drv/
-        obj-y += wmt_chrdev_wifi/
-        obj-y += wlan_drv_gen4m/
-    endif
 
 # Otherwise we were called directly from the command line;
 # invoke the kernel build system.

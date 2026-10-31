@@ -3618,9 +3618,7 @@ static int load_module(struct load_info *info, const char __user *uargs,
 	long err;
 	char *after_dashes;
 
-	/* Stock vendor modules may have different vermagic and symbol CRCs. */
-	flags |= MODULE_INIT_IGNORE_MODVERSIONS;
-	flags |= MODULE_INIT_IGNORE_VERMAGIC;
+	/* Enforce the exact kernel/module ABI. */
 
 	err = module_sig_check(info, flags);
 	if (err)
