@@ -1,0 +1,102 @@
+name: Publish Falcon-AZ kernel
+
+on:
+  workflow_dispatch:
+    inputs:
+      kernel_artifact_id:
+        description: Kernel artifact ID
+        required: true
+        default: "13034348545"
+      debug_artifact_id:
+        description: Debug artifact ID
+        required: true
+        default: "13034348567"
+      kernel_commit:
+        description: Kernel commit
+        required: true
+        default: "a9a0054bc1fe10ab917f97cc4b8a85dcbf5ae7e6"
+      release_tag:
+        description: Release tag
+        required: true
+        default: "private-source-backup"
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout packaging repo
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y binutils-aarch64-linux-gnu unzip
+
+      - name: Download build artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          mkdir -p artifacts/kernel artifacts/debug
+          gh api "repos/${{ github.repository }}/actions/artifacts/${{ inputs.kernel_artifact_id }}/zip" > artifacts/kernel.zip
+          gh api "repos/${{ github.repository }}/actions/artifacts/${{ inputs.debug_artifact_id }}/zip" > artifacts/debug.zip
+          unzip -q artifacts/kernel.zip -d artifacts/kernel
+          unzip -q artifacts/debug.zip -d artifacts/debug
+          ls -lh artifacts/kernel artifacts/debug
+
+      - name: Check WPDMA descriptor stores
+        run: |
+          sh scripts/check-desc-stores.sh artifacts/debug/src/out/vmlinux
+
+      - name: Prepare kernel zip and info
+        id: package
+        env:
+          COMMIT: ${{ inputs.kernel_commit }}
+        run: |
+          set -eu
+          ZIP=$(ls artifacts/kernel/Falcon-AZ-CPH2185-CPH2179-*.zip)
+          NAME="Falcon-AZ-CPH2185-CPH2179-${COMMIT:0:12}.zip"
+          cp "$ZIP" "$NAME"
+          SHA=$(sha256sum "$NAME" | awk '{print $1}')
+          SIZE=$(stat -c%s "$NAME")
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "size=$SIZE" >> "$GITHUB_OUTPUT"
+          python3 - "$NAME" <<'PY'
+          import sys, zipfile
+          z = zipfile.ZipFile(sys.argv[1])
+          names = z.namelist()
+          assert any(n == 'anykernel.sh' or n.endswith('/anykernel.sh') for n in names)
+          text = z.read('anykernel.sh').decode('utf-8', 'replace')
+          assert 'do.devicecheck=0' in text
+          assert 'wifi_modules' not in text
+          assert not any(n.endswith('.ko') for n in names)
+          print('OK: kernel-only AnyKernel zip, no device check, no modules')
+          PY
+          cat > Falcon-AZ-KERNEL-INFO.txt <<EOF
+          name=$NAME
+          size=$SIZE
+          sha256=$SHA
+          commit=$COMMIT
+          kernel=4.9.190-falcon-az
+          wifi=built-in (A15_Q, obj-y)
+          devicecheck=0
+          wpdma_fix=volatile 32-bit descriptor access
+          EOF
+          cat Falcon-AZ-KERNEL-INFO.txt
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          gh release upload "${{ inputs.release_tag }}" \
+            "${{ steps.package.outputs.name }}" \
+            Falcon-AZ-KERNEL-INFO.txt \
+            --clobber
+          echo "Uploaded ${{ steps.package.outputs.name }}"
+          echo "SHA256 ${{ steps.package.outputs.sha }}"
