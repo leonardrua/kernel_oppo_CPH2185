@@ -338,10 +338,12 @@ jobs:
           grep -q '^CONFIG_MODULE_FORCE_UNLOAD=y' arch/arm64/configs/CPH2185_defconfig
 
           # UTS_RELEASE stays 4.9.190+ so the vermagic matches the stock
-          # kernel ABI.
-          sed -i 's/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION="+"/' arch/arm64/configs/CPH2185_defconfig
+          # kernel ABI.  Leave CONFIG_LOCALVERSION empty: setlocalversion
+          # already appends "+" for an untagged tree, so setting "+" here
+          # would produce "4.9.190++".
+          sed -i 's/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION=""/' arch/arm64/configs/CPH2185_defconfig
           sed -i 's/^CONFIG_LOCALVERSION_AUTO=.*/CONFIG_LOCALVERSION_AUTO=n/' arch/arm64/configs/CPH2185_defconfig
-          grep -q '^CONFIG_LOCALVERSION="+"' arch/arm64/configs/CPH2185_defconfig
+          grep -q '^CONFIG_LOCALVERSION=""' arch/arm64/configs/CPH2185_defconfig
           grep -q '^CONFIG_LOCALVERSION_AUTO=n' arch/arm64/configs/CPH2185_defconfig
 
           # Keep the known-working touch configuration.
@@ -412,7 +414,7 @@ jobs:
         run: |
           set -ex
           echo '== config checks =='
-          grep -q '^CONFIG_LOCALVERSION="+"' ../Falcon-AZ-config
+          grep -q '^CONFIG_LOCALVERSION=""' ../Falcon-AZ-config
           grep -qE '^(CONFIG_LOCALVERSION_AUTO=n|# CONFIG_LOCALVERSION_AUTO is not set)$' ../Falcon-AZ-config
           grep -q '^CONFIG_KSU=y' ../Falcon-AZ-config
           grep -q '^CONFIG_KSU_SUSFS=y' ../Falcon-AZ-config
