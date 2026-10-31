@@ -7,7 +7,7 @@ endif
 
 ifeq ($(KBUILD_MODPOST_FAIL_ON_WARNINGS),)
     # Force build fail on modpost warning
-    KBUILD_MODPOST_FAIL_ON_WARNINGS=n
+    KBUILD_MODPOST_FAIL_ON_WARNINGS=y
 endif
 
 DRIVER_BUILD_DATE=$(shell date +%Y%m%d%H%M%S)
@@ -37,7 +37,7 @@ ccflags-y += -DWLAN_INCLUDE_PROC
 ccflags-y += -DCFG_SUPPORT_AGPS_ASSIST=1
 ccflags-y += -DCFG_SUPPORT_TSF_USING_BOOTTIME=1
 ccflags-y += -DARP_MONITER_ENABLE=1
-ccflags-y += 
+ccflags-y += -Werror
 #ccflags-y:=$(filter-out -U$(WLAN_CHIP_ID),$(ccflags-y))
 #ccflags-y += -DLINUX -D$(WLAN_CHIP_ID)
 ccflags-y += -DLINUX
@@ -226,6 +226,13 @@ obj-$(CONFIG_MTK_COMBO_WIFI) += $(MODULE_NAME).o
 #obj-y += $(MODULE_NAME).o
 endif
 
+ifeq ($(CONFIG_WLAN_DRV_BUILD_IN),y)
+$(warning $(MODULE_NAME) build-in boot.img)
+obj-y += $(MODULE_NAME).o
+else
+$(warning $(MODULE_NAME) is kernel module)
+obj-y += $(MODULE_NAME).o
+endif
 
 # ---------------------------------------------------
 # Directory List

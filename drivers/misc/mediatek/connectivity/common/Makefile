@@ -10,7 +10,7 @@ ifeq ($(TARGET_BUILD_VARIANT),$(filter $(TARGET_BUILD_VARIANT),userdebug user))
 endif
 
 # Force build fail on modpost warning
-KBUILD_MODPOST_FAIL_ON_WARNINGS := n
+KBUILD_MODPOST_FAIL_ON_WARNINGS := y
 ###############################################################################
 
 #ccflags-y += -D MTK_WCN_REMOVE_KERNEL_MODULE
@@ -46,7 +46,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/connectivity/common
 ###############################################################################
 
 
-ccflags-y += 
+ccflags-y += -Werror
 
 ifneq ($(filter "MT6628",$(CONFIG_MTK_COMBO_CHIP)),)
     ccflags-y += -D MT6628
@@ -71,7 +71,13 @@ endif
 
 ###############################################################################
 MODULE_NAME := wmt_drv
+ifeq ($(CONFIG_WLAN_DRV_BUILD_IN),y)
+$(warning $(MODULE_NAME) build-in boot.img)
 obj-y += $(MODULE_NAME).o
+else
+$(warning $(MODULE_NAME) is kernel module)
+obj-y += $(MODULE_NAME).o
+endif
 
 ###############################################################################
 # common_detect
